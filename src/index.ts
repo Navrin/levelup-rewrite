@@ -1,1 +1,2 @@
-console.log('File Loaded.');
+import LevelUp from './levelup';
+export default LevelUp;

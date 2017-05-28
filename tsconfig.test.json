@@ -8,7 +8,6 @@
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
         "noLib": false,
-        "outDir": "dist",
         "sourceMap": true,
         "noUnusedLocals": true,
         "pretty": true,
@@ -20,7 +19,6 @@
         ]
     },
     "include": [
-        "src/**/**.*",
         "tests/**/**.*"
     ],
     "exclude": [

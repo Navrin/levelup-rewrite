@@ -27,6 +27,29 @@
             "name": "Attach to Process",
             "port": 5858,
             "outFiles": []
+        },
+        {
+            "name": "Run Tests",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "program": "${workspaceRoot}/node_modules/mocha/bin/_mocha",
+            "args": [
+                "-u",
+                "tdd",
+                "--full-trace",
+                "--growl",
+                "--require",
+                "ts-node/register",
+                "./src/tests/**/*.ts*"
+            ],
+            "runtimeArgs": [
+                "--nolazy"
+            ],
+            "sourceMaps": true,
+            "outFiles": [
+                "${workspaceRoot}/dist/**/*.js"
+            ]
         }
     ]
 }
