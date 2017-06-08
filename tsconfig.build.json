@@ -11,6 +11,7 @@
         "sourceMap": true,
         "noUnusedLocals": true,
         "pretty": true,
+        "outDir": "dist",
         "allowSyntheticDefaultImports": true,
         "lib": [
             "es6",
