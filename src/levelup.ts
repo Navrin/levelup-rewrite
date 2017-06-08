@@ -1,10 +1,9 @@
 import LevelDown = require('leveldown');
-const Codec = require('level-codec');
+import Codec, { EncoderOptions, ExtendedBatchEncoding } from './encoder';
 const DeferredLevelDOWN = require('deferred-leveldown');
 
 export class ReadError extends Error {}
 export class WriteError extends Error {}
-
 
 export interface LevelUpSettings {
     /**
@@ -61,11 +60,34 @@ export interface LevelUpSettings {
     db: (location: string) => LevelDown.LevelDown;
 }
 
+export interface SettingPreMerge {
+    compression?: boolean;
+    cacheSize?: number;
+    keyEncoding?: number;
+    valueEncoding?: number;
+}
+
 export interface BatchObject {
     type: string;
     key: string;
     value: string;
 }
+
+type Bytes = string | Buffer;
+
+interface PutBatch {
+    type: 'put';
+    key: Bytes;
+    value: Bytes;
+}
+
+interface DelBatch {
+    type: 'del';
+    key: Bytes;
+}
+
+type Batch = PutBatch | DelBatch;
+
 
 export const defaultOptions: LevelUpSettings = {
     createIfMissing: true,
@@ -91,7 +113,7 @@ export default class LevelUp {
     private pendingClose: boolean;
     private location: string;
     private options: LevelUpSettings;
-    private codec: any;
+    private codec: Codec;
     private status: StatusCodes;
 
     constructor(location: string, options?: LevelUpSettings) {
@@ -159,7 +181,7 @@ export default class LevelUp {
         });
     }
 
-    public get(key: string, encoding: string = 'utf8'): Promise<string | object> {
+    public get(key: string, encoding: EncoderOptions = {}): Promise<any> {
         return new Promise((resolve, reject) => {
             if (key == null) {
                 reject(new ReadError(`Get Error: Expected (key: string), got ${key}`));
@@ -175,7 +197,7 @@ export default class LevelUp {
 
             const encodedKey = this.codec.encodeKey(key, encoding);
 
-            this.db.get(encodedKey, encoding, (err, value) => {
+            this.db.get(encodedKey, (err, value) => {
                 if (err) {
                     if (/notfound/i.test(err) || err.notFound) {
                         resolve(undefined);
@@ -184,40 +206,40 @@ export default class LevelUp {
                     }
                     reject(err);
                 }
-                const output: string = this.codec.decodeValue(value, encoding);
+
+                const output: any = this.codec.decodeValue(value, encoding);
 
                 resolve(output);
             });
         });
     }
 
-    public async exists(key: string, encoding: string = 'utf8'): Promise<boolean> {
+    public async exists(key: string, encoding: EncoderOptions = {}): Promise<boolean> {
         if (key == null) {
             throw new ReadError(`Expected (key: string), got ${key}`);
         }
 
-        const result = await this.get(key);
+        const encodedKey = this.codec.encodeKey(key, encoding);
+        const result = await this.get(encodedKey);
         return result !== undefined;
     }
 
-    public put(key: string, value: string | object, encoding: string = 'utf8'): Promise<string[]> {
-        return new Promise(async (resolve, reject) => {
+    public put<V>(key: string, value: V, encoding: EncoderOptions = {}): Promise<string[]> {
+        return new Promise<string[]>(async (resolve, reject) => {
             if (key == null || value == null) {
                 reject(new WriteError(`Expected either inputKey or value to be a string, got ${value} ${key}`));
                 return;
-
             }
 
             if (this.databaseNotReady()) {
                 reject(new ReadError('Awaiting Database...'));
                 return;
-
             }
 
             const encodedKey = this.codec.encodeKey(key, encoding);
             const encodedValue = this.codec.encodeKey(value, encoding);
 
-            this.db.put(encodedKey, encodedValue, encoding, (err) => {
+            this.db.put(encodedKey, encodedValue, (err) => {
                 if (err) {
                     reject(new WriteError(`Put Error: Tried to write to DB, instead got ${err}`));
                     return;
@@ -228,7 +250,7 @@ export default class LevelUp {
         });
     }
 
-    public del(key: string, encoding: string = 'utf8'): Promise<boolean> {
+    public del(key: string, encoding: EncoderOptions = {}): Promise<boolean> {
         return new Promise((resolve, reject) => {
             if (key == null) {
                 reject(new Error(`Del Error: Expected (key: string), got ${key}`));
@@ -241,10 +263,9 @@ export default class LevelUp {
                 return;
 
             }
-
             const encodedKey = this.codec.encodeKey(key, encoding);
 
-            this.db.del(encodedKey, encoding, (err) => {
+            this.db.del(encodedKey, (err) => {
                 if (err) {
                     reject(new WriteError(`Del Error: Tried to delete key, instead got ${err}`));
                 }
@@ -253,8 +274,8 @@ export default class LevelUp {
         });
     }
 
-    public batch(keys: BatchObject[], encoding: string = 'utf8'): Promise<{}> {
-        return new Promise((resolve, reject) => {
+    public batch(keys: BatchObject[], encoding: EncoderOptions = {}): Promise<void> {
+        return new Promise<void>((resolve, reject) => {
             if (!Array.isArray(keys)) {
                 reject(new WriteError(`Batch Error: Expected (keys: string[]), got ${keys}.`));
                 return;
@@ -267,15 +288,10 @@ export default class LevelUp {
 
             }
 
-            const encodedKeys = <any[]>(this.codec.encodeBatch(keys, encoding))
-                .map((op: { type: string, key: string, value: string }) => {
-                    if (!op.type && op.key !== undefined && op.value !== undefined) {
-                        op.type = 'put';
-                    }
-                    return op;
-                });
 
-            this.db.batch(encodedKeys, encoding, (err) => {
+            const encodedKeys: ExtendedBatchEncoding[] = this.codec.encodeBatch(keys, encoding);
+
+            this.db.batch((encodedKeys as Batch[]), (err) => {
                 if (err) {
                     reject(new WriteError(`Batch Error: Tried to batch keys, instead got ${err}`));
                     return;
@@ -298,17 +314,16 @@ export default class LevelUp {
         }
     }
 
-    public isOpen() {
+    private isOpen() {
         return this.status === StatusCodes.open;
     }
 
-    public isClosed() {
-        return this.status === StatusCodes.closed
-            || this.status === StatusCodes.closing;
-    }
+    // private isClosed() {
+    //     return this.status === StatusCodes.closed
+    //         || this.status === StatusCodes.closing;
+    // }
 
-    public isOpening() {
-        return this.status === StatusCodes.opening;
-    }
-
+    // private isOpening() {
+    //     return this.status === StatusCodes.opening;
+    // }
 }

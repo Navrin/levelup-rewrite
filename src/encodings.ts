@@ -71,8 +71,8 @@ for (const type of bufferEncodings) {
 }
 
 export interface EncodingObject {
-    encode: <T>(data: T) => T | any;
-    decode: <T>(data: T) => T | any;
+    encode: <T>(data: T) => any;
+    decode: <T>(data: T) => any;
     buffer: boolean;
     type: string;
 }
@@ -89,5 +89,6 @@ const encoders: IEncoders = {
     json,
     utf8,
 };
+
 
 export default encoders;

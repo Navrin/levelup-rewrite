@@ -5,7 +5,7 @@ import { db } from './database';
 
 // tslint:disable:function-name
 @suite('LevelDB: JSON') class JSONEncoding {
-    @test.skip async 'check if json store passes a shallow object test'() {
+    @test async 'check if json store passes a shallow object test'() {
         const data = { hello: 'world', alpha: 'beta', foo: 'bar' };
         const key = this.randomString();
 
