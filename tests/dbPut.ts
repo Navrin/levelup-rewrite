@@ -40,7 +40,7 @@ import { db } from './database';
         }
     }
 
-    randomString(): string {
+    randomString = (): string => {
         return (Math.random() * 10).toString(16);
     }
 

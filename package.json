@@ -10,8 +10,10 @@
     "start": " yarn run build && node ./dist/index.js",
     "build": "tsc -p tsconfig.build.json",
     "postinstall": "yarn run build",
-    "delete-test-dbs": "del-cli -f testdb/",
-    "test": "yarn run delete-test-dbs && mocha -u tdd --full-trace --growl --require ts-node/register ./tests/**/*.ts* && yarn run delete-test-dbs",
+    "delete-test-dbs": "del-cli -f testdb/ && mkdir testdb",
+    "pretest": "yarn run delete-test-dbs",
+    "test": "mocha -u tdd --full-trace --growl --require ts-node/register ./tests/**/*.ts*",
+    "posttest": "yarn run delete-test-dbs",
     "test:watch": "mocha-typescript-watch"
   },
   "dependencies": {

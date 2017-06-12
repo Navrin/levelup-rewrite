@@ -9,9 +9,9 @@ import { db } from './database';
         const data = { hello: 'world', alpha: 'beta', foo: 'bar' };
         const key = this.randomString();
 
-        await db.put(key, data, 'json');
+        await db.put(key, data, { valueEncoding: 'json' });
 
-        const result = await db.get(key, 'json');
+        const result = await db.get(key, { valueEncoding: 'json' });
 
         assert.deepEqual(result, data);
     }

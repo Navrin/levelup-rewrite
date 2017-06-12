@@ -9,7 +9,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const LevelDown = require("leveldown");
-const Codec = require('level-codec');
+const encoder_1 = require("./encoder");
 const DeferredLevelDOWN = require('deferred-leveldown');
 class ReadError extends Error {
 }
@@ -39,7 +39,7 @@ class LevelUp {
         const defaultedOptions = Object.assign({}, exports.defaultOptions, options);
         this.options = defaultedOptions;
         this.location = location;
-        this.codec = new Codec(defaultedOptions);
+        this.codec = new encoder_1.default(defaultedOptions);
         this.status = StatusCodes.new;
         this.open();
         return this;
@@ -99,7 +99,7 @@ class LevelUp {
                 return;
             }
             const encodedKey = this.codec.encodeKey(key, encoding);
-            this.db.get(encodedKey, encoding, (err, value) => {
+            this.db.get(encodedKey, (err, value) => {
                 if (err) {
                     if (/notfound/i.test(err) || err.notFound) {
                         resolve(undefined);
@@ -113,12 +113,13 @@ class LevelUp {
             });
         });
     }
-    exists(key, encoding = 'utf8') {
+    exists(key, encoding = {}) {
         return __awaiter(this, void 0, void 0, function* () {
             if (key == null) {
                 throw new ReadError(`Expected (key: string), got ${key}`);
             }
-            const result = yield this.get(key);
+            const encodedKey = this.codec.encodeKey(key, encoding);
+            const result = yield this.get(encodedKey);
             return result !== undefined;
         });
     }
@@ -133,8 +134,8 @@ class LevelUp {
                 return;
             }
             const encodedKey = this.codec.encodeKey(key, encoding);
-            const encodedValue = this.codec.encodeKey(value, encoding);
-            this.db.put(encodedKey, encodedValue, encoding, (err) => {
+            const encodedValue = this.codec.encodeValue(value, encoding);
+            this.db.put(encodedKey, encodedValue, (err) => {
                 if (err) {
                     reject(new WriteError(`Put Error: Tried to write to DB, instead got ${err}`));
                     return;
@@ -143,7 +144,7 @@ class LevelUp {
             });
         }));
     }
-    del(key, encoding = 'utf8') {
+    del(key, encoding = {}) {
         return new Promise((resolve, reject) => {
             if (key == null) {
                 reject(new Error(`Del Error: Expected (key: string), got ${key}`));
@@ -154,7 +155,7 @@ class LevelUp {
                 return;
             }
             const encodedKey = this.codec.encodeKey(key, encoding);
-            this.db.del(encodedKey, encoding, (err) => {
+            this.db.del(encodedKey, (err) => {
                 if (err) {
                     reject(new WriteError(`Del Error: Tried to delete key, instead got ${err}`));
                 }
@@ -162,7 +163,7 @@ class LevelUp {
             });
         });
     }
-    batch(keys, encoding = 'utf8') {
+    batch(keys, encoding = {}) {
         return new Promise((resolve, reject) => {
             if (!Array.isArray(keys)) {
                 reject(new WriteError(`Batch Error: Expected (keys: string[]), got ${keys}.`));
@@ -172,14 +173,8 @@ class LevelUp {
                 reject(new ReadError('Awaiting Database...'));
                 return;
             }
-            const encodedKeys = (this.codec.encodeBatch(keys, encoding))
-                .map((op) => {
-                if (!op.type && op.key !== undefined && op.value !== undefined) {
-                    op.type = 'put';
-                }
-                return op;
-            });
-            this.db.batch(encodedKeys, encoding, (err) => {
+            const encodedKeys = this.codec.encodeBatch(keys, encoding);
+            this.db.batch(encodedKeys, (err) => {
                 if (err) {
                     reject(new WriteError(`Batch Error: Tried to batch keys, instead got ${err}`));
                     return;
@@ -202,13 +197,6 @@ class LevelUp {
     }
     isOpen() {
         return this.status === StatusCodes.open;
-    }
-    isClosed() {
-        return this.status === StatusCodes.closed
-            || this.status === StatusCodes.closing;
-    }
-    isOpening() {
-        return this.status === StatusCodes.opening;
     }
 }
 exports.default = LevelUp;

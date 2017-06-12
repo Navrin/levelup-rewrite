@@ -181,7 +181,7 @@ export default class LevelUp {
         });
     }
 
-    public get(key: string, encoding: EncoderOptions = {}): Promise<any> {
+    public get(key: string, encoding: EncoderOptions | string = 'utf8'): Promise<any> {
         return new Promise((resolve, reject) => {
             if (key == null) {
                 reject(new ReadError(`Get Error: Expected (key: string), got ${key}`));
@@ -214,7 +214,7 @@ export default class LevelUp {
         });
     }
 
-    public async exists(key: string, encoding: EncoderOptions = {}): Promise<boolean> {
+    public async exists(key: string, encoding: EncoderOptions | string = {}): Promise<boolean> {
         if (key == null) {
             throw new ReadError(`Expected (key: string), got ${key}`);
         }
@@ -224,7 +224,7 @@ export default class LevelUp {
         return result !== undefined;
     }
 
-    public put<V>(key: string, value: V, encoding: EncoderOptions = {}): Promise<string[]> {
+    public put<V>(key: string, value: V, encoding: EncoderOptions | string = 'utf8'): Promise<string[]> {
         return new Promise<string[]>(async (resolve, reject) => {
             if (key == null || value == null) {
                 reject(new WriteError(`Expected either inputKey or value to be a string, got ${value} ${key}`));
@@ -237,7 +237,7 @@ export default class LevelUp {
             }
 
             const encodedKey = this.codec.encodeKey(key, encoding);
-            const encodedValue = this.codec.encodeKey(value, encoding);
+            const encodedValue = this.codec.encodeValue(value, encoding);
 
             this.db.put(encodedKey, encodedValue, (err) => {
                 if (err) {
@@ -250,7 +250,7 @@ export default class LevelUp {
         });
     }
 
-    public del(key: string, encoding: EncoderOptions = {}): Promise<boolean> {
+    public del(key: string, encoding: EncoderOptions | string = {}): Promise<boolean> {
         return new Promise((resolve, reject) => {
             if (key == null) {
                 reject(new Error(`Del Error: Expected (key: string), got ${key}`));
@@ -274,7 +274,7 @@ export default class LevelUp {
         });
     }
 
-    public batch(keys: BatchObject[], encoding: EncoderOptions = {}): Promise<void> {
+    public batch(keys: BatchObject[], encoding: EncoderOptions | string = {}): Promise<void> {
         return new Promise<void>((resolve, reject) => {
             if (!Array.isArray(keys)) {
                 reject(new WriteError(`Batch Error: Expected (keys: string[]), got ${keys}.`));

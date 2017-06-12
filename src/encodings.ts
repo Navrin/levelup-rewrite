@@ -17,8 +17,8 @@ const utf8 = {
 };
 
 const json = {
-    encode: (JSON.stringify as <T>(data: T) => T | any),
-    decode: (JSON.parse as <T>(data: T) => T | any),
+    encode: (JSON.stringify as <T>(data: T) => string),
+    decode: (JSON.parse as <T>(data: T) => any),
     buffer: false,
     type: 'json',
 };
@@ -57,6 +57,7 @@ const bufferTypes: IEncoders = {};
 
 for (const type of bufferEncodings) {
     bufferTypes[type] = {
+        type,
         encode<T>(data: T) {
             return isBinary(data)
                 ? data
@@ -66,7 +67,6 @@ for (const type of bufferEncodings) {
             return buffer.toString(type);
         },
         buffer: true,
-        type,
     };
 }
 

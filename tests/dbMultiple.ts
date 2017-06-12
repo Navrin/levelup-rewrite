@@ -26,12 +26,13 @@ const secondDatabase = new LevelUp('testdb/db_test_second');
         assert.equal(secondResult, data.value2.value);
     }
 
-    @test async 'check if dynamicly generated databases are valid'() {
+    @test 'check if dynamicly generated databases are valid'() {
+        const randString = () => (Math.random() * 10).toString(16);
         times(5, async () => {
-            const name = `testdb/db_test_${this.randomString()}`;
+            const name = `testdb/db_test_${randString()}`;
             const db = new LevelUp(name);
 
-            const entry = this.randomEntry();
+            const entry = { key: randString(), value: randString() };
 
             await db.put(entry.key, entry.value);
             const result = await db.get(entry.key);

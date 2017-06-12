@@ -1,5 +1,6 @@
 /// <reference types="leveldown" />
 import LevelDown = require('leveldown');
+import { EncoderOptions } from './encoder';
 export declare class ReadError extends Error {
 }
 export declare class WriteError extends Error {
@@ -58,6 +59,12 @@ export interface LevelUpSettings {
      */
     db: (location: string) => LevelDown.LevelDown;
 }
+export interface SettingPreMerge {
+    compression?: boolean;
+    cacheSize?: number;
+    keyEncoding?: number;
+    valueEncoding?: number;
+}
 export interface BatchObject {
     type: string;
     key: string;
@@ -74,13 +81,11 @@ export default class LevelUp {
     constructor(location: string, options?: LevelUpSettings);
     open(): Promise<LevelUp>;
     close(): Promise<boolean>;
-    get(key: string, encoding?: string): Promise<string | object>;
-    exists(key: string, encoding?: string): Promise<boolean>;
-    put(key: string, value: string | object, encoding?: string): Promise<string[]>;
-    del(key: string, encoding?: string): Promise<boolean>;
-    batch(keys: BatchObject[], encoding?: string): Promise<{}>;
+    get(key: string, encoding?: EncoderOptions | string): Promise<any>;
+    exists(key: string, encoding?: EncoderOptions | string): Promise<boolean>;
+    put<V>(key: string, value: V, encoding?: EncoderOptions | string): Promise<string[]>;
+    del(key: string, encoding?: EncoderOptions | string): Promise<boolean>;
+    batch(keys: BatchObject[], encoding?: EncoderOptions | string): Promise<void>;
     databaseNotReady(): boolean;
-    isOpen(): boolean;
-    isClosed(): boolean;
-    isOpening(): boolean;
+    private isOpen();
 }

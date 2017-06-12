@@ -1,5 +1,5 @@
 import encodings, { IEncoders, EncodingObject } from './encodings';
-import { BatchObject } from '../dist/levelup';
+import { BatchObject } from './levelup';
 
 export interface EncoderOptions {
     keyEncoding?: string;
@@ -46,8 +46,8 @@ export default class Codec {
      *
      * @memberof Codec
      */
-    public encodeKey<K>(key: K, options?: EncoderOptions, batchOptions?: EncoderOptions) {
-        return this.keyEncoding(options, batchOptions).encode(key);
+    public encodeKey<K>(key: K, options?: EncoderOptions | string, batchOptions?: EncoderOptions) {
+        return this.keyEncoding(this.createEncoderObject(options), batchOptions).encode(key);
     }
 
     /**
@@ -62,7 +62,7 @@ export default class Codec {
      * @memberof Codec
      */
     public encodeValue<V>(value: V, options?: EncoderOptions, batchOptions?: EncoderOptions) {
-        return this.valueEncoding(options, batchOptions).encode(value);
+        return this.valueEncoding(this.createEncoderObject(options), batchOptions).encode(value);
     }
 
     /**
@@ -76,7 +76,7 @@ export default class Codec {
      * @memberof Codec
      */
     public decodeKey<K>(key: K, options?: EncoderOptions) {
-        return this.keyEncoding(options).decode(key);
+        return this.keyEncoding(this.createEncoderObject(options)).decode(key);
     }
 
     /**
@@ -89,7 +89,14 @@ export default class Codec {
      * @memberof Codec
      */
     public decodeValue<V>(value: V, options?: EncoderOptions) {
-        return this.valueEncoding(options).decode(value);
+        return this.valueEncoding(this.createEncoderObject(options)).decode(value);
+    }
+
+    createEncoderObject(encoder: EncoderOptions | string | undefined): EncoderOptions | undefined {
+        if (typeof encoder === 'string') {
+            return { keyEncoding: encoder, valueEncoding: encoder };
+        }
+        return encoder;
     }
 
     /**
