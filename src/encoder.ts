@@ -20,9 +20,9 @@ interface BatchBuilderEntity {
 }
 
 export default class Codec {
+    specialCharacters = ['lt', 'gt', 'lte', 'gte', 'start', 'end'];
     encoding: IEncoders;
     options: EncoderOptions;
-    specialCharacters = ['lt', 'gt', 'lte', 'gte', 'start', 'end'];
 
     /**
      * Creates an instance of Codec.
@@ -35,6 +35,22 @@ export default class Codec {
         this.options = options;
     }
 
+    // public encode(value: any, encodingType?: 'value' | 'key', encoding?: EncoderOptions | string) {
+    //     constt encoder = this.getEncoder(encoding, encodingType);
+    //     this.getEncoded()
+    // }
+
+    // public decode(value: any, encoding?: EncoderOptions | string) {
+
+    // }
+
+    // private getEncoded(value: any, encoder: string) {
+    //     return this.encoding[encoder].encode(value);
+    // }
+
+    // private getEncoder(encoding?: EncoderOptions | string, encodingType?: 'value' | 'key') {
+
+    // }
     /**
      * Encodes a key with the specified encoding type, else the default encoding.
      *
